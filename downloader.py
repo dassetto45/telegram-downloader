@@ -150,5 +150,6 @@ for message in client.iter_messages(nomeCanale):
         c = client.download_media(
             message, fullPath, progress_callback=callback)
         buildFile(fullPath, filename, message.id)
+print("Download completed. You can find your files in " + fullPath)
 if config[0]['notify'] == True:
     sendNotification(config, nomeCanale)
