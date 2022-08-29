@@ -73,7 +73,7 @@ if not os.path.exists(nomeCanale):
 
 
 listObj = readFile(nomeCanale, filename)
-for message in client.iter_messages(nomeCanale, 6):
+for message in client.iter_messages(nomeCanale):
     downloaded = False
     for download in listObj:
         if message.id == download['id']:
