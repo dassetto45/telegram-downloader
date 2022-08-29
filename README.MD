@@ -8,15 +8,32 @@ Media downloader written in python
 pip3 install telethon
 ```
 
-Get API hash and API id from https://my.telegram.org, under API Development.
-and replace in code
+## Running
 
-```python
-50 api_id = 000
-51 api_hash = 'xxx'
+```shell
+python downloader.py
 ```
 
-### Known issue
+Get API hash and API id from https://my.telegram.org, under API Development and paste when prompted. 
+
+If you want to recieve notifications when downloads are over, answer Y and read further
+
+## Enable Notifications
+
+It's possible to enable notification directly on your account.
+In order to do so you have to:
+
+1. Have a Telegram account using your phone number
+
+2. Go into settings (via web or app) and set a username (if you already haven't)
+This is needed to obtain an id which your bot will use to send messages to
+
+3. Send a message to RawDataBot to get your id
+Just search in app (or web) for **RawDataBot** and send any message (hi will do). Take a note of your id.
+
+4. Create your bot
+search for **BotFather** and send the message /start. Help is displayed. Send the message /newbot and follow the instructions. Take a note of your _token_ to access the HTTP API
+### Known issues
 
 If you encounter UnsupportedMedia issue take this steps:
 

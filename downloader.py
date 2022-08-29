@@ -2,6 +2,7 @@
 from datetime import datetime
 import os
 import sys
+import requests
 import json
 from telethon import TelegramClient, sync
 
@@ -26,12 +27,32 @@ def get_config():
         input_api_id = input()
         print("Insert your Api HASH: ")
         input_api_hash = input()
-
+        print(
+            "Notify me when downloads are done (you'll need your account id and a bot token) [y/N]")
+        input_notify = input()
+        if input_notify == "":
+            input_notify = False
+        else:
+            input_notify = True
+            print("Your user id: ")
+            input_user_id = input()
+            print("Your BOT token: ")
+            input_bot_token = input()
         configObject = []
-        configObject.append({
-            "api_id": int(input_api_id),
-            "api_hash": input_api_hash
-        })
+        if input_notify == False:
+            configObject.append({
+                "api_id": int(input_api_id),
+                "api_hash": input_api_hash,
+                "notify": input_notify
+            })
+        else:
+            configObject.append({
+                "api_id": int(input_api_id),
+                "api_hash": input_api_hash,
+                "notify": input_notify,
+                "user_id": int(input_user_id),
+                "bot_token": input_bot_token
+            })
         jsonString = json.dumps(configObject, default=str)
         with open("config.json", 'w') as file:
             file.write(jsonString)
@@ -83,6 +104,15 @@ def buildFile(channelName, filename, message_id):
     writeFile(listObject, channelName, filename)
 
 
+def sendNotification(config, channelName):
+    token = config[0]['bot_token']
+    userId = config[0]['user_id']
+    url = f"https://api.telegram.org/bot{token}"
+    params = {"chat_id": userId,
+              "text": "Download from " + channelName + " is over"}
+    r = requests.get(url + "/sendMessage", params=params)
+
+
 config = get_config()
 api_id = config[0]['api_id']
 api_hash = config[0]['api_hash']
@@ -120,3 +150,5 @@ for message in client.iter_messages(nomeCanale):
         c = client.download_media(
             message, fullPath, progress_callback=callback)
         buildFile(fullPath, filename, message.id)
+if config[0]['notify'] == True:
+    sendNotification(config, nomeCanale)
