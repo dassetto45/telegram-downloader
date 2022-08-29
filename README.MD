@@ -28,12 +28,15 @@ In order to do so you have to:
 1. Have a Telegram account using your phone number
 
 2. Go into settings (via web or app) and set a username (if you already haven't)
+
 This is needed to obtain an id which your bot will use to send messages to
 
 3. Send a message to RawDataBot to get your id
+
 Just search in app (or web) for **RawDataBot** and send any message (hi will do). Take a note of your id.
 
 4. Create your bot
+
 search for **BotFather** and send the message /start. Help is displayed. Send the message /newbot and follow the instructions. Take a note of your _token_ to access the HTTP API
 
 If you get errors with requests do the follwing and try again
