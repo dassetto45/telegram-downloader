@@ -65,7 +65,7 @@ def get_config():
 
 
 def callback(current, total):
-    print('Scaricato', current, 'di', total,
+    print('Downloaded', current, 'of', total,
           'bytes: {:.2%}'.format(current / total))
 
 # legge file sincronizzazione
@@ -132,7 +132,7 @@ for d in channelList:
     print(f"{channelName}")
 
 baseDir = "downloads/"
-print('Seleziona il canale:')
+print('Select what chat/channel you want to download media files: ')
 nomeCanale = input()
 fullPath = baseDir + nomeCanale
 

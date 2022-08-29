@@ -18,6 +18,8 @@ Get API hash and API id from https://my.telegram.org, under API Development and 
 
 If you want to recieve notifications when downloads are over, answer Y and read further
 
+When prompted input the chat/channel from where you want to download all media and hit enter
+
 ## Enable Notifications
 
 It's possible to enable notification directly on your account.
@@ -33,6 +35,13 @@ Just search in app (or web) for **RawDataBot** and send any message (hi will do)
 
 4. Create your bot
 search for **BotFather** and send the message /start. Help is displayed. Send the message /newbot and follow the instructions. Take a note of your _token_ to access the HTTP API
+
+If you get errors with requests do the follwing and try again
+
+```shell
+pip install requests
+```
+
 ### Known issues
 
 If you encounter UnsupportedMedia issue take this steps:
