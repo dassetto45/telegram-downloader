@@ -23,6 +23,10 @@ def get_config():
     else:
         print("Let's make some config!")
         config = []
+        print("Insert full path for your downloads: (default path is ./download)")
+        path = input()
+        if path == "":
+            path = "./download"
         print("Insert your Api ID: ")
         input_api_id = input()
         print("Insert your Api HASH: ")
@@ -43,7 +47,8 @@ def get_config():
             configObject.append({
                 "api_id": int(input_api_id),
                 "api_hash": input_api_hash,
-                "notify": input_notify
+                "notify": input_notify,
+                "path": path
             })
         else:
             configObject.append({
@@ -51,7 +56,8 @@ def get_config():
                 "api_hash": input_api_hash,
                 "notify": input_notify,
                 "user_id": int(input_user_id),
-                "bot_token": input_bot_token
+                "bot_token": input_bot_token,
+                "path": path
             })
         jsonString = json.dumps(configObject, default=str)
         with open("config.json", 'w') as file:
@@ -116,7 +122,7 @@ def sendNotification(config, channelName):
 config = get_config()
 api_id = config[0]['api_id']
 api_hash = config[0]['api_hash']
-
+path = config[0]['path']
 filename = "downloaded.json"
 
 client = TelegramClient('sessions/test_session_101',
@@ -131,7 +137,8 @@ for d in channelList:
     channelName = d.name
     print(f"{channelName}")
 
-baseDir = "downloads/"
+#baseDir = "downloads/"
+baseDir = path
 print('Select what chat/channel you want to download media files: ')
 nomeCanale = input()
 fullPath = baseDir + nomeCanale
