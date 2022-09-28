@@ -130,14 +130,17 @@ client = TelegramClient('sessions/test_session_101',
                         )
 client.start()
 
-
+lista = []
 channelList = client.iter_dialogs()
 for d in channelList:
     channelId = d.entity.id
     channelName = d.name
-    print(f"{channelName}")
+    lista.append(channelName)
 
-#baseDir = "downloads/"
+lista.sort()
+for ch in lista:
+    print(f"{ch}")
+
 baseDir = path
 print('Select what chat/channel you want to download media files: ')
 nomeCanale = input()
