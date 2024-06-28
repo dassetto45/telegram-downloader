@@ -4,7 +4,8 @@ import os
 import sys
 import requests
 import json
-from telethon import TelegramClient, sync
+import re
+from telethon.sync import TelegramClient
 
 
 def get_config():
@@ -69,10 +70,13 @@ def get_config():
 
 # stampa progresso download
 
+def bytes_to_mb(byte_amount):
+    return byte_amount / (1024 * 1024)
 
 def callback(current, total):
-    print('Downloaded', current, 'of', total,
-          'bytes: {:.2%}'.format(current / total))
+    #print('Downloaded', current, 'of', total,
+    #      'bytes: {:.2%}'.format(current / total))
+    print(f"Downloaded {bytes_to_mb(current)} of {bytes_to_mb(total):.2%} MB: {current/total:.2%}")
 
 # legge file sincronizzazione
 
@@ -144,6 +148,7 @@ for ch in lista:
 baseDir = path
 print('Select what chat/channel you want to download media files: ')
 nomeCanale = input()
+#nomeCorretto = re.sub(r'[^\w_. -]', '', nomeCanale)
 fullPath = baseDir + nomeCanale
 
 if not os.path.exists(fullPath):
