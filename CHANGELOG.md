@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- The *Known issues* section of the README. Both entries were stale: the event loop
+  error is handled in the code by `ensure_event_loop()`, and the `UnsupportedMedia`
+  workaround told users to install telethon 1.24, which would now downgrade a working
+  install and break it on Python 3.12+.
+
+### Changed
+
+- *Installing* lists every dependency in one place — `telethon`, `requests` for the
+  notifications, and `cryptg` as an optional speedup — and states the versions the
+  script is developed against.
+
 ## [1.0.0] - 2026-08-07
 
 First tagged release. Everything before this point lives in the git history untagged.

@@ -27,8 +27,18 @@ you. Covered by 80 tests that need neither the network nor a Telegram account.
 ## Installing
 
 ```shell
-pip3 install telethon
+pip3 install telethon requests
+
+# optional, but downloads are noticeably faster with it:
+# telethon offloads AES to a C extension instead of doing it in Python
+pip3 install cryptg
 ```
+
+`requests` is only needed if you turn on the notifications described at the bottom.
+
+Developed and tested on Python 3.14 with telethon 1.42. Older Python is fine — the script installs
+its own event loop, so it works on the 3.12+ versions where `telethon.sync` would otherwise fail with
+`RuntimeError: There is no current event loop`.
 
 ## Running
 
@@ -231,35 +241,4 @@ Just search in app (or web) for **RawDataBot** and send any message (hi will do)
 
 search for **BotFather** and send the message /start. Help is displayed. Send the message /newbot and follow the instructions. Take a note of your _token_ to access the HTTP API
 
-If you get errors with requests do the follwing and try again
-
-```shell
-pip install requests
-```
-
-### Known issues
-
-`RuntimeError: There is no current event loop in thread 'MainThread'` on Python 3.14: Python removed
-the implicit event loop creation that `telethon.sync` relies on. `ensure_event_loop()` in
-`downloader.py` installs one before the client is built, so this is already handled — but any other
-script importing `telethon.sync` on Python 3.12+ needs the same call.
-
-If you encounter UnsupportedMedia issue take this steps:
-
-1. uninstall existing telethon, if any
-
-```shell
-pip uninstall telethon
-```
-
-2. install telethon from git tag version
-
-```shell
-pip3 install -U https://github.com/LonamiWebs/Telethon/archive/v1.24.zip
-```
-
-3. install cryptg (not sure if it's needed but it's nice to have it anyway)
-
-```shell
-pip install --upgrade cryptg~=0.3
-```
+Notifications are sent over HTTP, so `requests` has to be installed — see *Installing* above.
