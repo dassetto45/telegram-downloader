@@ -7,12 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-07
+
+### Added
+
+- **Expired file references are refetched instead of retried blindly.** The token
+  Telegram attaches to a media expires, and `iter_messages` hands out messages in
+  batches of 100: the token for the hundredth file is minted alongside the first one
+  and spent hours later. Telethon renews it on its own, but only for documents and
+  only when the entity is cached — for photos the error reached us, and the retry loop
+  then presented the very same dead token three times over. It now refetches the
+  message with `get_messages` and retries with a fresh one, without the between-attempt
+  wait, since this is not a network problem. A refetch returning nothing means the
+  message was deleted, so the file is given up on immediately rather than burning the
+  remaining attempts.
+
 ### Removed
 
 - The *Known issues* section of the README. Both entries were stale: the event loop
   error is handled in the code by `ensure_event_loop()`, and the `UnsupportedMedia`
   workaround told users to install telethon 1.24, which would now downgrade a working
-  install and break it on Python 3.12+.
+  install and break it on Python 3.12+ — and, as it turns out, pin them to the last
+  telethon without the file reference renewal described above.
 
 ### Changed
 
@@ -65,5 +81,6 @@ First tagged release. Everything before this point lives in the git history unta
   and 3.14, where the implicit loop creation `telethon.sync` relies on was removed.
 - Older versions joined download path and channel name without a separator.
 
-[Unreleased]: https://github.com/dassetto45/telegram-downloader/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/dassetto45/telegram-downloader/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/dassetto45/telegram-downloader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/dassetto45/telegram-downloader/releases/tag/v1.0.0

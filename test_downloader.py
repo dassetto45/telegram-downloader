@@ -12,6 +12,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 import downloader
+from downloader import FileReferenceExpiredError
 
 
 def touch(path, size, mtime=None):
@@ -387,6 +388,61 @@ class DownloadChannelTest(unittest.TestCase):
             self.run_download(client)
         self.assertEqual(downloader.readFile(self.channel_dir,
                                             downloader.TRACKING_FILENAME), [])
+
+    def test_an_expired_file_reference_is_refetched_before_retrying(self):
+        """Il file_reference scade: telethon lo rinnova da solo sui documenti, ma su
+        foto e entita' non in cache l'errore arriva fin qui. Riprovare con lo stesso
+        oggetto message ripresenta il token gia' morto, quindi va ripescato."""
+        fresh = fake_message(1, "a.pdf", 100)
+
+        class Expiring(FakeClient):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.refetched = []
+
+            def get_messages(self, entity, ids=None):
+                self.refetched.append(ids)
+                return fresh
+
+            def download_media(self, message, path, progress_callback=None):
+                # solo il messaggio ripescato porta un token valido
+                if message is not fresh:
+                    self.attempts += 1
+                    raise FileReferenceExpiredError(request=None)
+                return super().download_media(message, path, progress_callback)
+
+        client = Expiring([fake_message(1, "a.pdf", 100)])
+        with mock.patch.object(downloader, "RETRY_WAIT_SECONDS", 0):
+            summary = self.run_download(client)
+
+        self.assertEqual(client.refetched, [1])
+        self.assertEqual(sorted(os.listdir(self.target_dir)), ["a.pdf"])
+        self.assertEqual(summary["downloaded"], 1)
+        self.assertEqual(summary["failed"], 0)
+
+    def test_a_deleted_message_is_given_up_on_without_burning_the_retries(self):
+        """Se il refetch torna None il messaggio non esiste piu': insistere e' inutile."""
+        class Vanished(FakeClient):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.refetched = []
+
+            def get_messages(self, entity, ids=None):
+                self.refetched.append(ids)
+                return None
+
+            def download_media(self, message, path, progress_callback=None):
+                self.attempts += 1
+                raise FileReferenceExpiredError(request=None)
+
+        client = Vanished([fake_message(1, "a.pdf", 100)])
+        with mock.patch.object(downloader, "RETRY_WAIT_SECONDS", 0):
+            summary = self.run_download(client)
+
+        self.assertEqual(client.attempts, 1)
+        self.assertEqual(client.refetched, [1])
+        self.assertEqual(summary["failed"], 1)
+        self.assertEqual(os.listdir(self.target_dir), [])
 
     def test_ctrl_c_cleans_up_and_propagates(self):
         client = FakeClient([fake_message(1, "a.pdf", 100)],

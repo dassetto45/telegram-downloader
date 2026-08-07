@@ -10,8 +10,9 @@ import requests
 import json
 import re
 from telethon.sync import TelegramClient
+from telethon.errors import FileReferenceExpiredError
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 TRACKING_FILENAME = "downloaded.json"
 DEFAULT_PATH = "./download"
@@ -460,7 +461,20 @@ def resolve_target_path(target_dir, name, expected_size, truncated_path=None):
     return next_free_name(path)  # file diverso e completo: ' (1)' come oggi
 
 
-def download_with_retries(client, message, part_path, expected_size):
+def refresh_message(client, entity, message):
+    """Ripesca il messaggio dal server per averne un file_reference valido.
+
+    None quando il messaggio non c'e' piu' (cancellato, o media sostituito): in quel
+    caso riprovare e' inutile e va solo sprecata l'attesa fra un tentativo e l'altro.
+    """
+    try:
+        return client.get_messages(entity, ids=message.id)
+    except Exception as err:
+        print(f"    could not refetch message {message.id}: {err}")
+        return None
+
+
+def download_with_retries(client, entity, message, part_path, expected_size):
     """True se il file e' arrivato intero. Il temporaneo viene sempre ripulito."""
     for attempt in range(1, DOWNLOAD_ATTEMPTS + 1):
         try:
@@ -474,6 +488,21 @@ def download_with_retries(client, message, part_path, expected_size):
             # non discende da Exception: qui si passa solo per ripulire
             remove_quietly(part_path)
             raise
+        except FileReferenceExpiredError:
+            # Il token che Telegram allega al media scade, e iter_messages lo consegna
+            # a blocchi di 100: quello del centesimo file nasce insieme al primo e va
+            # speso molte ore dopo. Telethon lo rinnova da solo, ma solo sui documenti
+            # e solo se l'entita' e' in cache (downloads.py, _request): sulle foto
+            # l'errore arriva fin qui. Riprovare con lo stesso oggetto message
+            # ripresenterebbe il riferimento gia' morto, quindi si ripesca.
+            remove_quietly(part_path)
+            fresh = refresh_message(client, entity, message)
+            if fresh is None:
+                print(f"    [{message.id}] message is gone, nothing left to download")
+                return False
+            message = fresh
+            print(f"    [{message.id}] file reference expired, refetched")
+            continue  # niente attesa: non e' un problema di rete
         except Exception as err:
             remove_quietly(part_path)
             print(f"    attempt {attempt}/{DOWNLOAD_ATTEMPTS} failed: {err}")
@@ -835,7 +864,7 @@ def download_channel(client, entity, channel_dir, target_dir, search, extensions
                 continue
 
             part_path = os.path.join(target_dir, f"{message.id}{PART_SUFFIX}")
-            if not download_with_retries(client, message, part_path, size):
+            if not download_with_retries(client, entity, message, part_path, size):
                 failed += 1
                 print(f"    giving up on [{message.id}] {name}")
                 continue
