@@ -1,3 +1,5 @@
+download/*
 downloads/*
 sessions/*
 config.json
+__pycache__/
