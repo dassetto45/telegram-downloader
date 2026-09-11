@@ -22,7 +22,7 @@ This one handles all three, and it can clean up the library you already have.
   GB you would get back, and fixes them on request.
 
 Pure Python and telethon, no database, no daemon, no config beyond a JSON file it writes for
-you. Covered by 80 tests that need neither the network nor a Telegram account.
+you. Covered by 97 tests that need neither the network nor a Telegram account.
 
 ## Installing
 
@@ -90,6 +90,12 @@ leaving both filters empty downloads all media, exactly like before.
 
 Each search gets its own sub folder, while `downloaded.json` lives at channel level: a file
 already fetched by one search is not downloaded again by another.
+
+`<Channel>` is the channel name with the characters Windows and OneDrive refuse taken out, but a
+folder named after the channel exactly as Telegram spells it — punctuation, ampersands, emoji and
+all — is looked for first and used if it is there. Folders created by versions before 1.0.0 are
+named that way, and picking the sanitized name instead would hide their `downloaded.json` and their
+files, so the whole channel would be fetched again into a second folder.
 
 ## Duplicates
 

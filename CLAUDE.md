@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `python` is not on PATH here — use `python3` (3.14.4).
 
 ```shell
-python3 -m unittest test_downloader -v     # full suite (91 tests, stdlib only, no network)
+python3 -m unittest test_downloader -v     # full suite (97 tests, stdlib only, no network)
 python3 test_downloader.py                 # same, but with buffer=True so passing tests stay quiet
 python3 -m unittest test_downloader.DownloadChannelTest                       # one class
 python3 -m unittest test_downloader.DownloadChannelTest.test_allow_duplicates_downloads_it_anyway
@@ -72,9 +72,13 @@ sessions/test_session_101                telethon session (gitignored)
 ```
 
 The per-search subfolder plus channel-level tracking is deliberate: a file fetched by one search is
-not fetched again by another. `sanitize()` produces the channel folder name, and
-`resolve_channel_dir` tries the raw name *before* the sanitized one, because existing folders may
-contain characters `sanitize` would strip.
+not fetched again by another. `sanitize()` produces the channel folder name for a channel seen for
+the first time, but both paths that have to *locate* an existing folder try the raw name **before**
+the sanitized one, because folders written before 1.0.0 are named after the channel verbatim and
+still hold the `!`, `&`, `'` and emoji `sanitize` strips: `find_channel_dir` on the download path
+(`main`) and `resolve_channel_dir`, which wraps it, for `--find-duplicates`. Getting this backwards
+blinds `known_ids` *and* all three duplicate maps at once, and the channel is downloaded again from
+scratch into a second folder.
 
 ## Invariants
 
@@ -108,5 +112,4 @@ These are decisions with reasons behind them; do not "simplify" them away.
   Subclass it (see `Expiring`, `Vanished`, `Interrupting`) for error behaviour.
 - User-visible behaviour changes go in `CHANGELOG.md` under `[Unreleased]`, as a prose paragraph
   that states the problem and the reasoning, matching the existing entries. Bump `__version__` in
-  `downloader.py` when releasing, and update `README.MD` (note its filename is uppercase, and its
-  test count is currently stale at 80).
+  `downloader.py` when releasing, and update `README.MD` (note its filename is uppercase).

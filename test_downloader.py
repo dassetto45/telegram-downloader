@@ -764,6 +764,58 @@ class ResolveChannelDirTest(unittest.TestCase):
             os.path.join(self.dir, "Bulletin - Public Archive"))
 
 
+class FindChannelDirTest(unittest.TestCase):
+    """Il nome grezzo del canale va provato prima di quello ripulito.
+
+    Fino alla 1.0 la cartella si chiamava come il canale, emoji e punteggiatura
+    comprese: cercare solo sanitize() non la troverebbe piu'.
+    """
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = self.tmp.name
+        self.addCleanup(self.tmp.cleanup)
+
+    def test_finds_the_folder_named_after_the_raw_channel(self):
+        os.makedirs(os.path.join(self.dir, "Haikyuu!! Manga ITA"))
+        self.assertEqual(downloader.find_channel_dir(self.dir, "Haikyuu!! Manga ITA"),
+                         os.path.join(self.dir, "Haikyuu!! Manga ITA"))
+
+    def test_falls_back_to_the_sanitized_name(self):
+        os.makedirs(os.path.join(self.dir, "Haikyuu Manga ITA"))
+        self.assertEqual(downloader.find_channel_dir(self.dir, "Haikyuu!! Manga ITA"),
+                         os.path.join(self.dir, "Haikyuu Manga ITA"))
+
+    def test_the_raw_name_wins_when_both_exist(self):
+        os.makedirs(os.path.join(self.dir, "Haikyuu!! Manga ITA"))
+        os.makedirs(os.path.join(self.dir, "Haikyuu Manga ITA"))
+        self.assertEqual(downloader.find_channel_dir(self.dir, "Haikyuu!! Manga ITA"),
+                         os.path.join(self.dir, "Haikyuu!! Manga ITA"))
+
+    def test_nothing_on_disk_yet(self):
+        self.assertIsNone(downloader.find_channel_dir(self.dir, "Brand New Channel"))
+
+    def test_a_slash_in_the_channel_name_never_escapes_the_base_path(self):
+        """'News / Updates' e' un nome di canale legittimo, non un percorso annidato."""
+        os.makedirs(os.path.join(self.dir, "News", "Updates"))
+        self.assertIsNone(downloader.find_channel_dir(self.dir, "News/Updates"))
+
+    def test_a_legacy_folder_makes_its_files_visible_again(self):
+        """La regressione vera: senza questo, tracking e indice restano vuoti e il
+        canale viene riscaricato tutto."""
+        channel = os.path.join(self.dir, "\U0001f60eRead DRAGONERO\U0001f60e")
+        touch(os.path.join(channel, "a.pdf"), 100)
+        with open(os.path.join(channel, downloader.TRACKING_FILENAME), "w") as fp:
+            json.dump([{"id": 7, "name": "a.pdf", "size": 100, "media_id": 42}], fp)
+
+        found = downloader.find_channel_dir(self.dir, "\U0001f60eRead DRAGONERO\U0001f60e")
+        self.assertEqual(found, channel)
+        tracking = downloader.readFile(found, downloader.TRACKING_FILENAME)
+        index = downloader.build_duplicate_index(found, tracking)
+        self.assertEqual({entry["id"] for entry in tracking}, {7})
+        self.assertIsNotNone(downloader.find_duplicate(index, "a.pdf", 100, 42))
+
+
 class WalkFilesTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

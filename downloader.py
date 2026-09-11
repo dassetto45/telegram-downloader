@@ -631,18 +631,35 @@ def list_channel_dirs(base_path):
     return folders
 
 
+def find_channel_dir(base_path, wanted):
+    """Cartella di questo canale gia' su disco, o None se non ce n'e' ancora una.
+
+    Il nome esatto va provato per primo: fino alla 1.0 la cartella si chiamava come il
+    canale, con dentro le virgolette, i '!', le '&' e le emoji che sanitize toglie.
+    Cercare solo il nome ripulito non la troverebbe, e un canale gia' scaricato
+    ripartirebbe da zero: senza il suo downloaded.json known_ids nasce vuoto, e senza
+    i suoi file build_duplicate_index non ha niente da indicizzare, quindi ogni
+    messaggio risulta nuovo e finisce in una cartella nuova accanto a quella vecchia.
+    """
+    for candidate in (wanted, sanitize(wanted)):
+        # il nome di un canale puo' contenere '/': non e' una cartella di primo livello
+        if not candidate or "/" in candidate or "\\" in candidate:
+            continue
+        path = os.path.join(base_path, candidate)
+        if os.path.isdir(path):
+            return path
+    return None
+
+
 def resolve_channel_dir(base_path, wanted):
     """Folder of a channel already on disk, without touching Telegram.
 
     Accepts the folder name or a 1-based index from the printed list.
     """
     if wanted:
-        # il nome esatto va provato per primo: sanitize toglierebbe caratteri che nella
-        # cartella ci sono, come il '!' di 'Bulletin! - Public Archive'
-        for candidate in (wanted, sanitize(wanted)):
-            path = os.path.join(base_path, candidate)
-            if os.path.isdir(path):
-                return path
+        found = find_channel_dir(base_path, wanted)
+        if found:
+            return found
         print(f"There is no folder for {wanted!r} under {base_path}.")
 
     folders = list_channel_dirs(base_path)
@@ -971,8 +988,11 @@ def main():
             print('File extensions to keep, comma separated e.g. pdf,zip (empty = all): ')
             extensions = normalize_extensions(input())
 
-    folder = sanitize(channel_name)
-    channel_dir = os.path.join(base_path, folder)
+    # la cartella che c'e' gia' vince sul nome che sanitize produrrebbe oggi, altrimenti
+    # un canale scaricato da una versione precedente verrebbe ripreso da capo
+    channel_dir = (find_channel_dir(base_path, channel_name)
+                   or os.path.join(base_path, sanitize(channel_name)))
+    folder = os.path.basename(channel_dir)
     target_dir = os.path.join(channel_dir, slug_for(search, extensions))
     # a fine run cancelleremo solo cio' che abbiamo creato noi qui: una cartella
     # vuota gia' presente e' una scelta dell'utente

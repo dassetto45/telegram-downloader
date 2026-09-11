@@ -21,6 +21,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   was already there before the run is never touched. Files that matched but failed to
   download also keep their folder: the retry needs it.
 
+### Fixed
+
+- **A channel whose name carries punctuation is no longer downloaded all over again.**
+  The destination folder was derived from `sanitize()` on the channel name, but every
+  folder created before 1.0.0 is named after the channel exactly as Telegram spells it —
+  `Haikyuu!! Manga ITA`, `Lone Wolf & Cub - WickedManga`, `😎Read DRAGONERO😎`. The two
+  names differ by precisely the characters `sanitize` strips, so the run looked into a
+  folder that does not exist: `downloaded.json` was not found and `known_ids` came up
+  empty, the duplicate index walked nothing and `by_key`, `by_media` and `by_name` came
+  up empty too, and with every guard blind at once every single message counted as new.
+  A channel already sitting on disk would have been fetched from scratch into a second
+  folder next to the first one. The folder that is already there is now looked up before
+  falling back to the sanitized name, the same order `resolve_channel_dir` has always
+  used for `--find-duplicates`, and nothing is renamed or moved: the run simply writes
+  where the files already live. A name containing a slash is skipped rather than joined,
+  so a channel called `News/Updates` cannot point the run outside the download path.
+
 ## [1.1.0] - 2026-08-07
 
 ### Added
