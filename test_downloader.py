@@ -248,6 +248,13 @@ class DownloadChannelTest(unittest.TestCase):
     def write_tracking(self, entries):
         downloader.writeFile(entries, self.channel_dir, downloader.TRACKING_FILENAME)
 
+    def test_a_channel_with_nothing_to_match_counts_zero(self):
+        """main() decide su questo zero se stampare "nothing matched" e togliere
+        la cartella appena creata."""
+        summary = self.run_download(FakeClient([]))
+        self.assertEqual(summary["matched"], 0)
+        self.assertEqual(summary["downloaded"], 0)
+
     def test_a_file_already_on_disk_is_not_downloaded_again(self):
         touch(os.path.join(self.target_dir, "a.pdf"), 100)
         client = FakeClient([fake_message(1, "a.pdf", 100)])
@@ -567,6 +574,73 @@ class ResolveTargetPathTest(unittest.TestCase):
         self.assertEqual(
             downloader.resolve_target_path(target, "a.pdf", 999999, elsewhere),
             elsewhere)
+
+
+class DiscardEmptyDirsTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = self.tmp.name
+        self.addCleanup(self.tmp.cleanup)
+
+    def test_an_empty_folder_is_removed(self):
+        empty = os.path.join(self.dir, "all")
+        os.makedirs(empty)
+        self.assertEqual(downloader.discard_empty_dirs(empty), [empty])
+        self.assertFalse(os.path.exists(empty))
+
+    def test_a_folder_with_a_file_inside_stays(self):
+        full = os.path.join(self.dir, "all")
+        kept = touch(os.path.join(full, "a.pdf"), 10)
+        self.assertEqual(downloader.discard_empty_dirs(full), [])
+        self.assertTrue(os.path.exists(kept))
+
+    def test_nested_empty_folders_go_together(self):
+        channel = os.path.join(self.dir, "Canale")
+        target = os.path.join(channel, "ricerca")
+        os.makedirs(target)
+        self.assertEqual(downloader.discard_empty_dirs(target, channel),
+                         [target, channel])
+        self.assertFalse(os.path.exists(channel))
+
+    def test_a_parent_that_is_not_empty_stops_the_chain(self):
+        """Il caso di migrate_legacy_tracking: la history importata non si perde."""
+        channel = os.path.join(self.dir, "Canale")
+        target = os.path.join(channel, "ricerca")
+        os.makedirs(target)
+        tracking = touch(os.path.join(channel, downloader.TRACKING_FILENAME), 10)
+        self.assertEqual(downloader.discard_empty_dirs(target, channel), [target])
+        self.assertFalse(os.path.exists(target))
+        self.assertTrue(os.path.exists(tracking))
+
+    def test_a_missing_folder_is_not_an_error(self):
+        self.assertEqual(downloader.discard_empty_dirs(os.path.join(self.dir, "nope")),
+                         [])
+
+    def test_a_folder_holding_only_a_subfolder_stays(self):
+        channel = os.path.join(self.dir, "Canale")
+        os.makedirs(os.path.join(channel, "ricerca"))
+        self.assertEqual(downloader.discard_empty_dirs(channel), [])
+        self.assertTrue(os.path.exists(channel))
+
+    def test_a_symlink_is_not_followed(self):
+        """Chi ha puntato la cartella di una ricerca altrove non deve perdere nulla."""
+        real = os.path.join(self.dir, "altrove")
+        kept = touch(os.path.join(real, "a.pdf"), 10)
+        link = os.path.join(self.dir, "ricerca")
+        try:
+            os.symlink(real, link, target_is_directory=True)
+        except (OSError, NotImplementedError):
+            self.skipTest("no symlink privileges")
+        self.assertEqual(downloader.discard_empty_dirs(link), [])
+        self.assertTrue(os.path.exists(kept))
+
+    def test_the_order_is_from_the_innermost_out(self):
+        """Passandole al contrario la parent piena ferma tutto: e' il contratto."""
+        channel = os.path.join(self.dir, "Canale")
+        target = os.path.join(channel, "ricerca")
+        os.makedirs(target)
+        self.assertEqual(downloader.discard_empty_dirs(channel, target), [])
+        self.assertTrue(os.path.exists(target))
 
 
 class TargetNameTest(unittest.TestCase):

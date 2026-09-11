@@ -422,6 +422,24 @@ def clear_part_files(directory):
     return removed
 
 
+def discard_empty_dirs(*dirs):
+    """Rimuove le cartelle vuote passate, dalla piu' interna alla piu' esterna.
+
+    Serve a non lasciare in giro la destinazione creata per una ricerca che non ha
+    prodotto nulla. os.rmdir fallisce da solo se dentro c'e' qualcosa, quindi una
+    cartella con dei file non rischia mai. Ritorna quelle davvero rimosse.
+    """
+    removed = []
+    for path in dirs:
+        try:
+            os.rmdir(path)
+        except OSError:
+            # se l'interna sopravvive, la sua parent per definizione non e' vuota
+            break
+        removed.append(path)
+    return removed
+
+
 def target_name(message, media_file):
     """Il nome che telethon userebbe: file_name se c'e', altrimenti kind_data-ora.ext."""
     name = getattr(media_file, "name", None)
@@ -956,6 +974,10 @@ def main():
     folder = sanitize(channel_name)
     channel_dir = os.path.join(base_path, folder)
     target_dir = os.path.join(channel_dir, slug_for(search, extensions))
+    # a fine run cancelleremo solo cio' che abbiamo creato noi qui: una cartella
+    # vuota gia' presente e' una scelta dell'utente
+    new_channel_dir = not os.path.isdir(channel_dir)
+    new_target_dir = not os.path.isdir(target_dir)
     if not args.dry_run:
         os.makedirs(target_dir, exist_ok=True)
         migrate_legacy_tracking(base_path, folder, channel_dir)
@@ -982,12 +1004,25 @@ def main():
     if summary['failed']:
         print(f"{summary['failed']} file(s) failed after {DOWNLOAD_ATTEMPTS} attempts. "
               f"Run the same command again to retry them.")
+    if summary['matched'] == 0:
+        print(f"Nothing matched {describe_filters(search, extensions)} "
+              f"in {channel_name}.")
     if args.dry_run:
         print("Dry run finished, no file was written.")
         return
 
-    print(f"Downloaded {summary['downloaded']} new file(s) into {target_dir}")
-    if config[0].get('notify') == True:
+    own_dirs = [path for path, mine in ((target_dir, new_target_dir),
+                                        (channel_dir, new_channel_dir)) if mine]
+    removed = discard_empty_dirs(*own_dirs)
+
+    if summary['matched']:
+        # la destinazione si nomina solo se e' ancora li'
+        print(f"Downloaded {summary['downloaded']} new file(s)"
+              + ("" if removed else f" into {target_dir}"))
+    if removed:
+        # removed[-1] e' la piu' esterna: dire "ho tolto .../Canale" basta e avanza
+        print(f"Removed the empty folder {removed[-1]}")
+    if config[0].get('notify') == True and summary['matched']:
         sendNotification(config, channel_name, summary, search, extensions)
 
 

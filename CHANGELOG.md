@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **A search that matches nothing says so, and takes back the folder it had just
+  created.** The destination is built before the first message is fetched, so a typo in
+  `--search` or an `--ext` nobody ever uploaded used to leave an empty folder behind for
+  good, and the run signed off with `Downloaded 0 new file(s)` pointing at it plus a
+  notification about nothing. The run now reports what it looked for and found no match
+  of, removes the search folder and, if it was created by the same run and is empty too,
+  the channel folder above it, and sends no notification. Removal is `os.rmdir`, so a
+  folder holding anything at all — a file, another search, the imported
+  `downloaded.json` — is left alone by the operating system itself, and a folder that
+  was already there before the run is never touched. Files that matched but failed to
+  download also keep their folder: the retry needs it.
+
 ## [1.1.0] - 2026-08-07
 
 ### Added
