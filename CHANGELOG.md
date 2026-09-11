@@ -5,7 +5,7 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.1] - 2026-09-11
 
 ### Changed
 
@@ -112,6 +112,7 @@ First tagged release. Everything before this point lives in the git history unta
   and 3.14, where the implicit loop creation `telethon.sync` relies on was removed.
 - Older versions joined download path and channel name without a separator.
 
-[Unreleased]: https://github.com/dassetto45/telegram-downloader/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/dassetto45/telegram-downloader/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/dassetto45/telegram-downloader/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/dassetto45/telegram-downloader/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/dassetto45/telegram-downloader/releases/tag/v1.0.0

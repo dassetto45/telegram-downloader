@@ -12,7 +12,7 @@ import re
 from telethon.sync import TelegramClient
 from telethon.errors import FileReferenceExpiredError
 
-__version__ = "1.1.0"
+__version__ = "1.1.1"
 
 TRACKING_FILENAME = "downloaded.json"
 DEFAULT_PATH = "./download"
